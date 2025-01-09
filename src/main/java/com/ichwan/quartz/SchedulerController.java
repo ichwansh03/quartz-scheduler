@@ -1,15 +1,23 @@
 package com.ichwan.quartz;
 
+import lombok.AllArgsConstructor;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.TimeZone;
+
 import static org.quartz.TriggerBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
-import static org.quartz.DateBuilder.*;
+import static org.quartz.CronScheduleBuilder.*;
+import static org.quartz.impl.matchers.EverythingMatcher.*;
 
 @RestController
+@AllArgsConstructor
 public class SchedulerController {
+
+    private SimpleJobListener listener;
 
     @GetMapping("/api")
     public String scheduledFactory() throws SchedulerException {
@@ -25,7 +33,8 @@ public class SchedulerController {
 
         Trigger trigger = TriggerBuilder.newTrigger()
                 .withIdentity("myTrigger", "group1")
-                .startNow()
+                .withSchedule(weeklyOnDayAndHourAndMinute(DateBuilder.FRIDAY,10,30)
+                        .inTimeZone(TimeZone.getTimeZone("Asia/Jakarta")))
                 .build();
 
         scheduler.scheduleJob(job, trigger);
@@ -54,7 +63,9 @@ public class SchedulerController {
                 .forJob(job)
                 .build();
 
-        scheduler.scheduleJob(trigger);
+        scheduler.scheduleJob(job, trigger);
+        //ERROR Cannot invoke "org.quartz.JobListener.getName()" because "jobListener" is null
+        scheduler.getListenerManager().addJobListener(listener, allJobs());
 
         return "Done";
     }
